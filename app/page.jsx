@@ -7,7 +7,7 @@ import { generateFortune } from '../lib/fortune';
 import { logDraw, saveFortune, todayDrawCount } from '../lib/supabase';
 import { ZODIAC_SIGNS, ZODIAC_ELEMENT_COLOR, COUNTRIES, findCity, getSunSign, getRisingSign } from '../lib/zodiac';
 import { calcNatalChart } from '../lib/astro';
-import NatalChart, { AspectLegend } from '../components/NatalChart';
+import NatalChart, { AspectLegend, PlanetTable, ElementBalance, AspectGrid } from '../components/NatalChart';
 
 const ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX', 'XXI'];
 const SPREAD_SIZE = 6;
@@ -493,6 +493,21 @@ export default function Home() {
                 <NatalChart chart={natal} />
               </div>
               <AspectLegend />
+
+              <h3 className="zodiac-sub">행성 위치표</h3>
+              <PlanetTable chart={natal} />
+
+              <h3 className="zodiac-sub">원소 × 특질 분포</h3>
+              <p className="panel-caption" style={{ marginBottom: 10 }}>
+                10개 행성이 어떤 원소(불·흙·공기·물)와 특질(활동·고정·변통)에 모여 있는지 보여줘요.
+              </p>
+              <ElementBalance chart={natal} />
+
+              <h3 className="zodiac-sub">어스펙트 그리드</h3>
+              <p className="panel-caption" style={{ marginBottom: 10 }}>
+                행성 쌍이 만나는 칸의 기호가 두 행성의 관계예요. 기호에 마우스를 올리면 상세가 보여요.
+              </p>
+              <AspectGrid chart={natal} />
 
               <h3 className="zodiac-sub">행성으로 보는 나의 12가지 성향</h3>
               <div className="planet-list">

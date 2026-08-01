@@ -531,6 +531,139 @@ button {
   fill: var(--text-tertiary);
 }
 
+.natal-svg .axis {
+  stroke: var(--text-secondary);
+  stroke-width: 1.6;
+  opacity: 0.85;
+}
+
+.natal-svg .axis-arrow {
+  fill: var(--text-secondary);
+}
+
+.natal-svg .angle-deg {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--text-secondary);
+}
+
+/* 행성 위치표 */
+.planet-table,
+.balance-table,
+.aspect-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.planet-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--separator);
+  white-space: nowrap;
+}
+
+.planet-table td {
+  padding: 8.5px 10px;
+  border-bottom: 1px solid var(--separator);
+  white-space: nowrap;
+}
+
+.planet-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.planet-table .pt-name {
+  font-weight: 700;
+}
+
+.planet-table .pt-retro {
+  color: #ff3b30;
+  font-size: 11px;
+  font-weight: 800;
+  margin-left: 4px;
+}
+
+.planet-table .pt-axis {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.planet-table .pt-deg {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.planet-table .pt-house {
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* 원소 × 특질 분포표 */
+.balance-table th,
+.balance-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--separator);
+  text-align: center;
+  font-size: 12.5px;
+}
+
+.balance-table thead th {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.balance-table tbody th {
+  font-weight: 800;
+  text-align: left;
+}
+
+.balance-table td span {
+  font-size: 15px;
+  margin: 0 1.5px;
+}
+
+.balance-table .bt-total {
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-table tbody tr:last-child th,
+.balance-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* 어스펙트 그리드 */
+.aspect-grid th,
+.aspect-grid td {
+  width: 32px;
+  height: 30px;
+  text-align: center;
+  border: 1px solid var(--separator);
+  font-size: 14px;
+}
+
+.aspect-grid th {
+  font-size: 15px;
+  background: var(--bg);
+}
+
+.aspect-grid .ag-footer th {
+  border-top: 1px solid var(--separator);
+}
+
+.aspect-grid td span {
+  font-weight: 700;
+  cursor: default;
+}
+
 .aspect-legend {
   display: flex;
   flex-wrap: wrap;
