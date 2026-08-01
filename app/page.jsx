@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ELEMENT_COLOR, ELEMENT_EMOJI } from '../lib/saju';
 import { TAROT_CARDS } from '../lib/tarot';
 import { generateFortune } from '../lib/fortune';
@@ -8,6 +8,24 @@ import { logDraw, todayDrawCount } from '../lib/supabase';
 
 const ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX', 'XXI'];
 const SPREAD_SIZE = 6;
+const HISTORY_KEY = 'fortune_history';
+const HISTORY_MAX = 50;
+
+function loadHistory() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(HISTORY_KEY));
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+function formatDrawTime(ts) {
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${hh}:${mm}`;
+}
 
 function shuffleSpread() {
   const ids = TAROT_CARDS.map((c) => c.id);
@@ -86,7 +104,20 @@ export default function Home() {
   const [flippedId, setFlippedId] = useState(null);
   const [result, setResult] = useState(null);
   const [drawCount, setDrawCount] = useState(null);
+  const [todayCount, setTodayCount] = useState(null);
   const resultRef = useRef(null);
+
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    todayDrawCount().then((count) => setTodayCount(count));
+    setHistory(loadHistory());
+  }, []);
+
+  const clearHistory = () => {
+    localStorage.removeItem(HISTORY_KEY);
+    setHistory([]);
+  };
 
   const years = useMemo(() => {
     const list = [];
@@ -109,9 +140,25 @@ export default function Home() {
     setTimeout(() => {
       const fortune = generateFortune(birth, today, cardId);
       setResult(fortune);
+      const entry = {
+        at: Date.now(),
+        card: `${fortune.card.emoji} ${fortune.card.name}`,
+        score: fortune.score,
+        comment: fortune.scoreComment,
+      };
+      setHistory((prev) => {
+        const next = [entry, ...prev].slice(0, HISTORY_MAX);
+        try {
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
       logDraw({ birth, cardId, cardName: fortune.card.name, score: fortune.score })
         .then(() => todayDrawCount())
-        .then((count) => setDrawCount(count));
+        .then((count) => {
+          setDrawCount(count);
+          if (count != null) setTodayCount(count);
+        });
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
     }, 850);
   };
@@ -139,6 +186,11 @@ export default function Home() {
           오늘의 운세<span style={{ color: 'var(--accent)' }}>.</span>
         </h1>
         <p className="subtitle">만세력과 타로가 만나, 당신의 하루를 읽습니다</p>
+        {todayCount != null && (
+          <p className="header-count">
+            🔮 오늘 <strong>{todayCount.toLocaleString()}명</strong>이 운세를 뽑았어요
+          </p>
+        )}
       </header>
 
       {step === 'input' && (
@@ -332,6 +384,42 @@ export default function Home() {
             </>
           )}
         </>
+      )}
+
+      {history.length > 0 && (
+        <section className="panel">
+          <div className="history-head">
+            <div>
+              <h2 className="panel-title">내 운세 기록</h2>
+              <p className="panel-caption" style={{ marginBottom: 0 }}>
+                이 브라우저에서 뽑은 최근 {history.length}건 (최신순)
+              </p>
+            </div>
+            <button className="history-clear" onClick={clearHistory}>기록 지우기</button>
+          </div>
+          <div className="history-scroll">
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th>뽑은 시각</th>
+                  <th>카드</th>
+                  <th>점수</th>
+                  <th>총평</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h) => (
+                  <tr key={h.at}>
+                    <td className="t-time">{formatDrawTime(h.at)}</td>
+                    <td className="t-card">{h.card}</td>
+                    <td className="t-score">{h.score}점</td>
+                    <td className="t-comment">{h.comment}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
 
       <p className="footer-note">
