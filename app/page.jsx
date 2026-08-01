@@ -106,6 +106,9 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [drawCount, setDrawCount] = useState(null);
   const [todayCount, setTodayCount] = useState(null);
+  const [aiText, setAiText] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
   const resultRef = useRef(null);
 
   const [history, setHistory] = useState([]);
@@ -138,6 +141,8 @@ export default function Home() {
   const pickCard = (cardId) => {
     if (flippedId !== null) return;
     setFlippedId(cardId);
+    setAiText(null);
+    setAiError(null);
     setTimeout(() => {
       const fortune = generateFortune(birth, today, cardId);
       setResult(fortune);
@@ -173,7 +178,45 @@ export default function Home() {
     setFlippedId(null);
     setResult(null);
     setDrawCount(null);
+    setAiText(null);
+    setAiError(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const generateAiFortune = async () => {
+    if (!result || aiLoading) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const res = await fetch('/api/ai-fortune', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          saju: {
+            year: `${result.saju.year.stem}${result.saju.year.branch}`,
+            month: `${result.saju.month.stem}${result.saju.month.branch}`,
+            day: `${result.saju.day.stem}${result.saju.day.branch}`,
+            dayElement: result.myElement,
+          },
+          todayPillar: `${result.todaySaju.day.stem}${result.todaySaju.day.branch} (${result.todayElement})`,
+          card: {
+            name: result.card.name,
+            en: result.card.en,
+            keywords: result.card.keywords.join(', '),
+          },
+          score: result.score,
+          relationLabel: result.relationLabel,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'AI 운세 생성에 실패했습니다.');
+      setAiText(data.text);
+    } catch (e) {
+      setAiError(e.message);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const sajuPreview = useMemo(() => {
@@ -347,6 +390,24 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+              </section>
+
+              <section className="panel">
+                <h2 className="panel-title">✨ AI 심층 운세</h2>
+                <p className="panel-caption">
+                  AI 상담가가 당신의 사주와 {result.card.name} 카드를 함께 읽고 오늘의 운세를 새로 써 드립니다.
+                </p>
+                {aiText && <p className="ai-text">{aiText}</p>}
+                {aiError && <p className="ai-error">{aiError}</p>}
+                <button className="cta" onClick={generateAiFortune} disabled={aiLoading}>
+                  {aiLoading ? (
+                    <span className="ai-loading">AI가 운세를 읽고 있어요<span className="dots" /></span>
+                  ) : aiText ? (
+                    '다시 생성하기'
+                  ) : (
+                    'AI 운세 생성하기'
+                  )}
+                </button>
               </section>
 
               <section className="panel">

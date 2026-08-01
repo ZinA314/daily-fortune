@@ -569,6 +569,44 @@ button {
   margin-top: 24px;
 }
 
+/* ── AI 심층 운세 ─────────────────────── */
+.ai-text {
+  font-size: 15px;
+  line-height: 1.75;
+  padding: 16px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent) 8%, var(--card-bg)),
+    color-mix(in srgb, #af52de 8%, var(--card-bg)));
+  border-radius: 16px;
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ai-error {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #ff3b30;
+  margin-bottom: 12px;
+}
+
+.cta:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.ai-loading .dots::after {
+  content: '';
+  animation: dots 1.4s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}
+
 /* ── 내 운세 기록 ─────────────────────── */
 .history-head {
   display: flex;
