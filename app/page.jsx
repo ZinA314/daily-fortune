@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { ELEMENT_COLOR, ELEMENT_EMOJI } from '../lib/saju';
 import { TAROT_CARDS } from '../lib/tarot';
 import { generateFortune } from '../lib/fortune';
+import { logDraw, todayDrawCount } from '../lib/supabase';
 
 const ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX', 'XXI'];
 const SPREAD_SIZE = 6;
@@ -84,6 +85,7 @@ export default function Home() {
   const [spread, setSpread] = useState([]);
   const [flippedId, setFlippedId] = useState(null);
   const [result, setResult] = useState(null);
+  const [drawCount, setDrawCount] = useState(null);
   const resultRef = useRef(null);
 
   const years = useMemo(() => {
@@ -105,7 +107,11 @@ export default function Home() {
     if (flippedId !== null) return;
     setFlippedId(cardId);
     setTimeout(() => {
-      setResult(generateFortune(birth, today, cardId));
+      const fortune = generateFortune(birth, today, cardId);
+      setResult(fortune);
+      logDraw({ birth, cardId, cardName: fortune.card.name, score: fortune.score })
+        .then(() => todayDrawCount())
+        .then((count) => setDrawCount(count));
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
     }, 850);
   };
@@ -114,6 +120,7 @@ export default function Home() {
     setSpread(shuffleSpread());
     setFlippedId(null);
     setResult(null);
+    setDrawCount(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -226,6 +233,9 @@ export default function Home() {
                     <div className="comment">{result.scoreComment}</div>
                   </div>
                 </div>
+                {drawCount != null && (
+                  <p className="draw-count">🔮 오늘 {drawCount.toLocaleString()}번째로 뽑힌 운세예요</p>
+                )}
                 <p className="fortune-text">
                   오늘의 일진은 <strong>{result.todaySaju.day.stem}{result.todaySaju.day.branch}
                   ({result.todaySaju.day.stemHanja}{result.todaySaju.day.branchHanja})</strong>,{' '}

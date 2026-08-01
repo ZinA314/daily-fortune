@@ -9,8 +9,9 @@
 .DS_Store
 *.pem
 
-# env
+# env (Supabase 키 등 비밀값 — 절대 커밋 금지)
 .env*
+.env.local
 
 # vercel
 .vercel
