@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ELEMENT_COLOR, ELEMENT_EMOJI } from '../lib/saju';
 import { TAROT_CARDS } from '../lib/tarot';
 import { generateFortune } from '../lib/fortune';
-import { logDraw, todayDrawCount } from '../lib/supabase';
+import { logDraw, saveFortune, todayDrawCount } from '../lib/supabase';
 
 const ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX', 'XXI'];
 const SPREAD_SIZE = 6;
@@ -99,6 +99,7 @@ export default function Home() {
   }, []);
 
   const [birth, setBirth] = useState({ y: 1995, m: 1, d: 1 });
+  const [name, setName] = useState('');
   const [step, setStep] = useState('input'); // 'input' | 'cards'
   const [spread, setSpread] = useState([]);
   const [flippedId, setFlippedId] = useState(null);
@@ -153,6 +154,10 @@ export default function Home() {
         } catch {}
         return next;
       });
+      saveFortune({
+        name,
+        content: `[${fortune.card.emoji} ${fortune.card.name} · ${fortune.score}점] ${fortune.scoreComment}. ${fortune.overall}`,
+      });
       logDraw({ birth, cardId, cardName: fortune.card.name, score: fortune.score })
         .then(() => todayDrawCount())
         .then((count) => {
@@ -197,6 +202,18 @@ export default function Home() {
         <section className="panel">
           <h2 className="panel-title">생년월일을 알려주세요</h2>
           <p className="panel-caption">양력 기준으로 만세력(사주 명식)을 세워 드립니다.</p>
+          <div className="field" style={{ marginBottom: 10 }}>
+            <label htmlFor="bn">이름 (선택)</label>
+            <input
+              id="bn"
+              type="text"
+              className="name-input"
+              placeholder="예: 홍길동 — 비워두면 익명으로 기록돼요"
+              maxLength={20}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
           <div className="birth-row">
             <div className="field">
               <label htmlFor="by">년</label>

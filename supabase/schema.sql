@@ -23,3 +23,19 @@ create policy "anon can read draws"
   on public.fortune_draws for select
   to anon
   using (true);
+
+-- 운세 내용 저장 테이블 (날짜 · 이름 · 운세 내용)
+create table if not exists public.fortunes (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  draw_date date not null default current_date,
+  name text not null default '익명',
+  content text not null
+);
+
+alter table public.fortunes enable row level security;
+
+create policy "anon can insert fortunes"
+  on public.fortunes for insert
+  to anon
+  with check (true);
