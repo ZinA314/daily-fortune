@@ -5,6 +5,9 @@ import { ELEMENT_COLOR, ELEMENT_EMOJI } from '../lib/saju';
 import { TAROT_CARDS } from '../lib/tarot';
 import { generateFortune } from '../lib/fortune';
 import { logDraw, saveFortune, todayDrawCount } from '../lib/supabase';
+import { ZODIAC_SIGNS, ZODIAC_ELEMENT_COLOR, COUNTRIES, findCity, getSunSign, getRisingSign } from '../lib/zodiac';
+import { calcNatalChart } from '../lib/astro';
+import NatalChart, { AspectLegend } from '../components/NatalChart';
 
 const ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX', 'XXI'];
 const SPREAD_SIZE = 6;
@@ -100,6 +103,22 @@ export default function Home() {
 
   const [birth, setBirth] = useState({ y: 1995, m: 1, d: 1 });
   const [name, setName] = useState('');
+  const [birthHour, setBirthHour] = useState(''); // '' = 모름
+  const [birthMinute, setBirthMinute] = useState(0);
+  const [birthCountry, setBirthCountry] = useState('대한민국');
+  const [birthCity, setBirthCity] = useState('서울');
+
+  const cityOptions = useMemo(
+    () => (COUNTRIES.find((x) => x.name === birthCountry) || COUNTRIES[0]).cities,
+    [birthCountry]
+  );
+
+  const changeCountry = (countryName) => {
+    setBirthCountry(countryName);
+    const country = COUNTRIES.find((x) => x.name === countryName) || COUNTRIES[0];
+    setBirthCity(country.cities[0].name);
+  };
+  const [selectedSign, setSelectedSign] = useState(null);
   const [step, setStep] = useState('input'); // 'input' | 'cards'
   const [spread, setSpread] = useState([]);
   const [flippedId, setFlippedId] = useState(null);
@@ -135,6 +154,7 @@ export default function Home() {
     setSpread(shuffleSpread());
     setFlippedId(null);
     setResult(null);
+    setSelectedSign(getSunSign(birth.m, birth.d).id);
     setStep('cards');
   };
 
@@ -224,6 +244,30 @@ export default function Home() {
     return generateFortune(birth, today, 0).saju;
   }, [step, birth, today]);
 
+  const zodiac = useMemo(() => {
+    if (step !== 'cards') return null;
+    const sun = getSunSign(birth.m, birth.d);
+    let rising = null;
+    if (birthHour !== '') {
+      const city = findCity(birthCountry, birthCity);
+      rising = getRisingSign(birth.y, birth.m, birth.d, +birthHour, +birthMinute, city);
+    }
+    return { sun, rising };
+  }, [step, birth, birthHour, birthMinute, birthCountry, birthCity]);
+
+  const natal = useMemo(() => {
+    if (step !== 'cards') return null;
+    return calcNatalChart({
+      y: birth.y, m: birth.m, d: birth.d,
+      hour: birthHour === '' ? 12 : +birthHour,
+      minute: +birthMinute,
+      city: findCity(birthCountry, birthCity),
+      timeKnown: birthHour !== '',
+    });
+  }, [step, birth, birthHour, birthMinute, birthCountry, birthCity]);
+
+  const signAt = (lon) => ZODIAC_SIGNS[Math.floor(((lon % 360) + 360) % 360 / 30) % 12];
+
   const dateLabel = `${today.y}년 ${today.m}월 ${today.d}일`;
 
   return (
@@ -283,6 +327,46 @@ export default function Home() {
               </select>
             </div>
           </div>
+          <div className="birth-row two" style={{ marginTop: 10 }}>
+            <div className="field">
+              <label htmlFor="bh">태어난 시각</label>
+              <select id="bh" value={birthHour} onChange={(e) => setBirthHour(e.target.value)}>
+                <option value="">모름</option>
+                {Array.from({ length: 24 }, (_, i) => (
+                  <option key={i} value={i}>{i}시</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="bmin">분</label>
+              <select id="bmin" value={birthMinute} disabled={birthHour === ''} onChange={(e) => setBirthMinute(+e.target.value)}>
+                {Array.from({ length: 60 }, (_, mn) => (
+                  <option key={mn} value={mn}>{mn}분</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="birth-row two" style={{ marginTop: 10 }}>
+            <div className="field">
+              <label htmlFor="bcountry">태어난 국가</label>
+              <select id="bcountry" value={birthCountry} onChange={(e) => changeCountry(e.target.value)}>
+                {COUNTRIES.map((co) => (
+                  <option key={co.name} value={co.name}>{co.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="bc">태어난 도시</label>
+              <select id="bc" value={birthCity} onChange={(e) => setBirthCity(e.target.value)}>
+                {cityOptions.map((ct) => (
+                  <option key={ct.name} value={ct.name}>{ct.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <p className="form-hint">
+            시각과 국가·도시는 별자리(상승궁) 계산에 사용돼요. 시각을 모르면 '모름'을 선택하세요 — 태양 별자리는 그대로 볼 수 있어요.
+          </p>
           <button className="cta" onClick={startCards}>만세력 세우고 카드 뽑기</button>
         </section>
       )}
@@ -304,6 +388,176 @@ export default function Home() {
               {result ? result.dayMasterDesc : generateFortune(birth, today, 0).dayMasterDesc}
             </div>
           </section>
+
+          {zodiac && (
+            <section className="panel">
+              <h2 className="panel-title">나의 별자리</h2>
+              <p className="panel-caption">
+                {birth.m}월 {birth.d}일생
+                {zodiac.rising ? ` · ${birthCountry} ${birthCity}, ${birthHour}시 ${birthMinute}분 출생 기준` : ''}
+              </p>
+              <div className={`zodiac-me ${zodiac.rising ? 'two' : ''}`}>
+                <div className="zodiac-card">
+                  <span className="z-emoji">{zodiac.sun.emoji}</span>
+                  <div className="z-role">태양 별자리</div>
+                  <div className="z-name">{zodiac.sun.name}</div>
+                  <div className="z-range">{zodiac.sun.range}</div>
+                  <span className="z-elem" style={{ background: ZODIAC_ELEMENT_COLOR[zodiac.sun.element] }}>
+                    {zodiac.sun.element}의 별자리
+                  </span>
+                </div>
+                {zodiac.rising && (
+                  <div className="zodiac-card">
+                    <span className="z-emoji">{zodiac.rising.emoji}</span>
+                    <div className="z-role">상승 별자리 (어센던트)</div>
+                    <div className="z-name">{zodiac.rising.name}</div>
+                    <div className="z-range">타인에게 비치는 첫인상</div>
+                    <span className="z-elem" style={{ background: ZODIAC_ELEMENT_COLOR[zodiac.rising.element] }}>
+                      {zodiac.rising.element}의 별자리
+                    </span>
+                  </div>
+                )}
+              </div>
+              {!zodiac.rising && (
+                <p className="zodiac-note">
+                  💡 태어난 시각을 입력하면 첫인상을 나타내는 <strong>상승 별자리</strong>도 볼 수 있어요.
+                </p>
+              )}
+
+              <h3 className="zodiac-sub">12별자리 성향 보기</h3>
+              <div className="zodiac-grid">
+                {ZODIAC_SIGNS.map((s) => (
+                  <button
+                    key={s.id}
+                    className={`zodiac-chip${selectedSign === s.id ? ' active' : ''}`}
+                    onClick={() => setSelectedSign(s.id)}
+                  >
+                    <span className="zc-emoji">{s.emoji}</span>
+                    <span className="zc-name">{s.name}</span>
+                    {zodiac.sun.id === s.id && <span className="zc-me">나</span>}
+                  </button>
+                ))}
+              </div>
+              {selectedSign != null && (() => {
+                const s = ZODIAC_SIGNS[selectedSign];
+                return (
+                  <div className="zodiac-detail" key={s.id}>
+                    <div className="zd-head">
+                      <span className="zd-emoji">{s.symbol}</span>
+                      <div>
+                        <div className="zd-name">
+                          {s.name} <span className="zd-en">{s.en}</span>
+                        </div>
+                        <div className="zd-meta">
+                          {s.range} · {s.element}의 원소 · 지배성 {s.planet}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="keywords" style={{ marginTop: 10 }}>
+                      {s.keywords.map((k) => (
+                        <span className="keyword" key={k}>#{k}</span>
+                      ))}
+                    </div>
+                    <p className="fortune-text" style={{ marginTop: 10 }}>{s.traits}</p>
+                    <div className="zd-sw">
+                      <div className="f-section" style={{ flex: 1 }}>
+                        <span className="icon">💪</span>
+                        <div>
+                          <div className="label">강점</div>
+                          <div className="body">{s.strength}</div>
+                        </div>
+                      </div>
+                      <div className="f-section" style={{ flex: 1 }}>
+                        <span className="icon">🌧️</span>
+                        <div>
+                          <div className="label">약점</div>
+                          <div className="body">{s.weakness}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </section>
+          )}
+
+          {natal && (
+            <section className="panel">
+              <h2 className="panel-title">나의 네이털 차트</h2>
+              <p className="panel-caption">
+                {natal.timeKnown
+                  ? `출생 시각과 장소 기준 · 바깥 링은 황도 12궁, 숫자는 하우스, 중앙 선은 행성 간 어스펙트예요.`
+                  : `출생 시각 미입력 시 정오 기준으로 그려져요 (달 위치는 ±6° 오차 가능). 시각을 입력하면 상승점(AC)·하우스까지 표시됩니다.`}
+              </p>
+              <div className="natal-wrap">
+                <NatalChart chart={natal} />
+              </div>
+              <AspectLegend />
+
+              <h3 className="zodiac-sub">행성으로 보는 나의 12가지 성향</h3>
+              <div className="planet-list">
+                {natal.planets.map((p) => (
+                  <div className="planet-row" key={p.key}>
+                    <span className="p-glyph" style={{ color: p.color }}>{p.glyph}</span>
+                    <div className="p-info">
+                      <div className="p-title">
+                        {p.name} <span className="p-meaning">{p.meaning}</span>
+                      </div>
+                      <div className="p-desc">
+                        {p.sign.emoji} {p.sign.name} {Math.round(p.degInSign)}° — {p.desc}. 핵심 기운: {p.sign.keywords.join(' · ')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {natal.asc != null && (
+                  <div className="planet-row">
+                    <span className="p-glyph" style={{ color: 'var(--accent)' }}>AC</span>
+                    <div className="p-info">
+                      <div className="p-title">상승점 <span className="p-meaning">첫인상과 삶의 태도</span></div>
+                      <div className="p-desc">
+                        {signAt(natal.asc).emoji} {signAt(natal.asc).name} {Math.round(natal.asc % 30)}° — 세상을 향해 열어두는 나의 창. 핵심 기운: {signAt(natal.asc).keywords.join(' · ')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {natal.mc != null && (
+                  <div className="planet-row">
+                    <span className="p-glyph" style={{ color: 'var(--accent)' }}>MC</span>
+                    <div className="p-info">
+                      <div className="p-title">중천점 <span className="p-meaning">사회적 지향점과 커리어</span></div>
+                      <div className="p-desc">
+                        {signAt(natal.mc).emoji} {signAt(natal.mc).name} {Math.round(natal.mc % 30)}° — 세상에서 이루고 싶은 방향. 핵심 기운: {signAt(natal.mc).keywords.join(' · ')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {natal.aspects.length > 0 && (
+                <>
+                  <h3 className="zodiac-sub">주요 어스펙트 (행성 간 관계)</h3>
+                  <div className="aspect-list">
+                    {natal.aspects.slice(0, 8).map((a, i) => (
+                      <div className="aspect-row" key={i}>
+                        <span className="a-pair">
+                          <span style={{ color: a.a.color }}>{a.a.glyph}</span>
+                          <span className="a-symbol" style={{ color: a.type.color }}>{a.type.symbol}</span>
+                          <span style={{ color: a.b.color }}>{a.b.glyph}</span>
+                        </span>
+                        <div className="a-info">
+                          <div className="a-title">
+                            {a.a.name} {a.type.name.split(' ')[0]} {a.b.name}
+                            <span className="a-orb"> {a.type.angle}° · 오브 {a.orb.toFixed(1)}°</span>
+                          </div>
+                          <div className="a-desc">{a.a.meaning}과(와) {a.b.meaning}의 관계 — {a.type.meaning}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </section>
+          )}
 
           <section className="panel">
             <h2 className="panel-title">마음이 가는 카드를 한 장 고르세요</h2>
