@@ -8,6 +8,7 @@ import { logDraw, saveFortune, todayDrawCount } from '../lib/supabase';
 import { ZODIAC_SIGNS, ZODIAC_ELEMENT_COLOR, COUNTRIES, findCity, getSunSign, getRisingSign } from '../lib/zodiac';
 import { calcNatalChart } from '../lib/astro';
 import NatalChart, { AspectLegend, PlanetTable, ElementBalance, AspectGrid } from '../components/NatalChart';
+import { pointInSignText, aspectText } from '../lib/interpretations';
 
 const ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX', 'XXI'];
 const SPREAD_SIZE = 6;
@@ -156,6 +157,8 @@ export default function Home() {
     setResult(null);
     setSelectedSign(getSunSign(birth.m, birth.d).id);
     setStep('cards');
+    // 다음 화면(나의 만세력)이 최상단부터 보이도록 즉시 스크롤 초기화
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const pickCard = (cardId) => {
@@ -519,8 +522,9 @@ export default function Home() {
                         {p.name} <span className="p-meaning">{p.meaning}</span>
                       </div>
                       <div className="p-desc">
-                        {p.sign.emoji} {p.sign.name} {Math.round(p.degInSign)}° — {p.desc}. 핵심 기운: {p.sign.keywords.join(' · ')}
+                        {p.sign.emoji} {p.sign.name} {Math.round(p.degInSign)}° · {p.desc}
                       </div>
+                      <p className="p-interpret">{pointInSignText(p.key, p.sign)}</p>
                     </div>
                   </div>
                 ))}
@@ -530,8 +534,9 @@ export default function Home() {
                     <div className="p-info">
                       <div className="p-title">상승점 <span className="p-meaning">첫인상과 삶의 태도</span></div>
                       <div className="p-desc">
-                        {signAt(natal.asc).emoji} {signAt(natal.asc).name} {Math.round(natal.asc % 30)}° — 세상을 향해 열어두는 나의 창. 핵심 기운: {signAt(natal.asc).keywords.join(' · ')}
+                        {signAt(natal.asc).emoji} {signAt(natal.asc).name} {Math.round(natal.asc % 30)}° · 세상을 향해 열어두는 나의 창
                       </div>
+                      <p className="p-interpret">{pointInSignText('asc', signAt(natal.asc))}</p>
                     </div>
                   </div>
                 )}
@@ -541,8 +546,9 @@ export default function Home() {
                     <div className="p-info">
                       <div className="p-title">중천점 <span className="p-meaning">사회적 지향점과 커리어</span></div>
                       <div className="p-desc">
-                        {signAt(natal.mc).emoji} {signAt(natal.mc).name} {Math.round(natal.mc % 30)}° — 세상에서 이루고 싶은 방향. 핵심 기운: {signAt(natal.mc).keywords.join(' · ')}
+                        {signAt(natal.mc).emoji} {signAt(natal.mc).name} {Math.round(natal.mc % 30)}° · 세상에서 이루고 싶은 방향
                       </div>
+                      <p className="p-interpret">{pointInSignText('mc', signAt(natal.mc))}</p>
                     </div>
                   </div>
                 )}
@@ -564,7 +570,7 @@ export default function Home() {
                             {a.a.name} {a.type.name.split(' ')[0]} {a.b.name}
                             <span className="a-orb"> {a.type.angle}° · 오브 {a.orb.toFixed(1)}°</span>
                           </div>
-                          <div className="a-desc">{a.a.meaning}과(와) {a.b.meaning}의 관계 — {a.type.meaning}</div>
+                          <div className="a-desc">{aspectText(a)}</div>
                         </div>
                       </div>
                     ))}

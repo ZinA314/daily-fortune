@@ -731,6 +731,15 @@ button {
   margin-top: 2px;
 }
 
+.planet-row .p-interpret {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.65;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid var(--separator);
+}
+
 .aspect-list {
   display: flex;
   flex-direction: column;
