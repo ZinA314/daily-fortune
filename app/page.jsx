@@ -5,7 +5,7 @@ import { ELEMENT_COLOR, ELEMENT_EMOJI } from '../lib/saju';
 import { TAROT_CARDS } from '../lib/tarot';
 import { generateFortune } from '../lib/fortune';
 import { logDraw, saveFortune, todayDrawCount } from '../lib/supabase';
-import { ZODIAC_SIGNS, ZODIAC_ELEMENT_COLOR, COUNTRIES, findCity, getSunSign, getRisingSign } from '../lib/zodiac';
+import { ZODIAC_SIGNS, ZODIAC_ELEMENT_COLOR, COUNTRIES, findCity, groupCities, getSunSign, getRisingSign } from '../lib/zodiac';
 import { calcNatalChart } from '../lib/astro';
 import NatalChart, { AspectLegend, PlanetTable, ElementBalance, AspectGrid } from '../components/NatalChart';
 import { pointInSignText, aspectText } from '../lib/interpretations';
@@ -361,9 +361,21 @@ export default function Home() {
             <div className="field">
               <label htmlFor="bc">태어난 도시</label>
               <select id="bc" value={birthCity} onChange={(e) => setBirthCity(e.target.value)}>
-                {cityOptions.map((ct) => (
-                  <option key={ct.name} value={ct.name}>{ct.name}</option>
-                ))}
+                {(() => {
+                  const groups = groupCities(cityOptions);
+                  if (!groups) {
+                    return cityOptions.map((ct) => (
+                      <option key={ct.name} value={ct.name}>{ct.name}</option>
+                    ));
+                  }
+                  return groups.map((g) => (
+                    <optgroup key={g.region} label={g.region}>
+                      {g.cities.map((ct) => (
+                        <option key={ct.name} value={ct.name}>{ct.name}</option>
+                      ))}
+                    </optgroup>
+                  ));
+                })()}
               </select>
             </div>
           </div>
